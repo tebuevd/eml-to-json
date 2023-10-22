@@ -1,3 +1,4 @@
+use json;
 use mail_parser::*;
 use std::env;
 use std::fs::File;
@@ -29,10 +30,16 @@ fn main() {
     let subject = message.subject().unwrap();
     let attachment_count = message.attachment_count();
     let body = message.body_text(0).unwrap();
+    let body_html = message.body_html(0).unwrap();
 
-    println!("From: {:?}", from);
-    println!("To: {:?}", to);
-    println!("Subject: {:?}", subject);
-    println!("Body: {:?}", body);
-    println!("Attachment count: {:?}", attachment_count);
+    let mut json_obj = json::JsonValue::new_object();
+
+    json_obj["to"] = to.into();
+    json_obj["from"] = from.into();
+    json_obj["subject"] = subject.into();
+    json_obj["attachment_count"] = attachment_count.into();
+    json_obj["body"] = body.to_string().into();
+    json_obj["body_html"] = body_html.to_string().into();
+
+    println!("{:#}", json_obj);
 }

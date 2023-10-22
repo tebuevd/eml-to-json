@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 mail-parser = "0.9.1"
+json = "0.12.4"

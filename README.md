@@ -2,6 +2,14 @@
 
 A CLI tool to read an .eml file and print out a JSON representation to stdout.
 
+## Installation
+
+```
+git clone https://github.com/tebuevd/eml-to-json
+cd eml-to-json
+cargo install --path .
+```
+
 ## How to use
 
 ```

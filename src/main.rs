@@ -1,5 +1,6 @@
 use json;
 use json::object;
+use json::JsonValue;
 use mail_parser::HeaderValue;
 use mail_parser::*;
 use std::env;
@@ -17,25 +18,11 @@ fn main() {
 
     let message = MessageParser::default().parse(&vec).unwrap();
 
-    let to: Vec<_> = message
-        .to()
-        .unwrap()
-        .iter()
-        .map(|x| x.address().unwrap())
-        .collect();
-    let from: Vec<_> = message
-        .from()
-        .unwrap()
-        .iter()
-        .map(|x| x.address().unwrap())
-        .collect();
-    let subject = message.subject().unwrap();
     let attachment_count = message.attachment_count();
     let body = message.body_text(0).unwrap();
     let body_html = message.body_html(0).unwrap();
-    let date = message.date().unwrap().to_rfc3339();
 
-    let mut headers_arr = json::JsonValue::new_array();
+    let mut headers_arr = JsonValue::new_array();
 
     for header in message.headers() {
         match &header.value {
@@ -65,12 +52,49 @@ fn main() {
         }
     }
 
-    let mut json_obj = json::JsonValue::new_object();
+    let mut json_obj = JsonValue::new_object();
 
-    json_obj["date"] = date.into();
-    json_obj["to"] = to.into();
-    json_obj["from"] = from.into();
-    json_obj["subject"] = subject.into();
+    json_obj["from"] = match message.from() {
+        None => JsonValue::new_array(),
+        Some(item) => item
+            .iter()
+            .map(|i| {
+                let mut data = JsonValue::new_object();
+
+                data["name"] = i.name().into();
+                data["address"] = i.address().into();
+                return data;
+            })
+            .collect::<Vec<_>>()
+            .into(),
+    };
+
+    json_obj["to"] = match message.to() {
+        None => JsonValue::new_array(),
+        Some(to_fields) => to_fields
+            .iter()
+            .map(|address| {
+                let mut data = JsonValue::new_object();
+
+                data["name"] = address.name().into();
+                data["address"] = address.address().into();
+
+                return data;
+            })
+            .collect::<Vec<_>>()
+            .into(),
+    };
+
+    json_obj["subject"] = match message.subject() {
+        Some(subject) => subject.into(),
+        None => JsonValue::Null,
+    };
+
+    json_obj["date"] = match message.date() {
+        Some(date) => date.to_rfc3339().into(),
+        None => JsonValue::Null,
+    };
+
     json_obj["attachment_count"] = attachment_count.into();
     json_obj["body"] = body.to_string().into();
     json_obj["body_html"] = body_html.to_string().into();
